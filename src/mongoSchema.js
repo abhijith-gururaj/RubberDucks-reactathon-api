@@ -18,7 +18,9 @@ var jobSchema = new Schema({
     jobName : String,
     closedOn : Date,
     isActive : Boolean,
-    jobDescription : String
+    jobDescription : String,
+    interviewDate : Date,
+    lastDateToApply : Date
 }, {collection : "verizonJobs"});
 jobSchema.plugin(autoIncrement.plugin, {model: 'jobOpening', field: 'jobId'});
 
