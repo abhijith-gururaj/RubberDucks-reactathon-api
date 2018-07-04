@@ -42,8 +42,8 @@ var schema = buildSchema(`
         closedOn : Date,
         isActive : Boolean!,
         jobDescription : String!,
-        interviewDate : Date,
-        lastDateToApply : Date
+        lastDateToApply : Date,
+        interviewDate : Date
     }
     type Person{
         email : String!,
