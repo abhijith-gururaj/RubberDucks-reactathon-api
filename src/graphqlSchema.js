@@ -25,7 +25,9 @@ var schema = buildSchema(`
         isValidUser(email : String, password : String) : Person,
         candidate(email : String!) : Candidate,
         candidates : [Candidate],
-        feedback(feedbackId : Int!) : JobFeedback
+        feedback(feedbackId : Int!) : JobFeedback,
+        jobApplications(candidateId : Int) : [AppWrapper],
+        application(applicationId : Int) : AppWrapper
     },
     type Mutation {
         createJobOpening(jobPortfolio : String, jobDescription : String) : Job,
@@ -51,7 +53,16 @@ var schema = buildSchema(`
         role : String!,
         isValid : Boolean
     }
-    
+    type AppWrapper{
+        jobId : Int,
+        candidateId : Int,
+        applicationId : Int,
+        candidateName : String,
+        jobName : String,
+        interviewDate : Date,
+        jobDescription : String,
+        appliedOn : Date
+    }
     type Candidate{
         email : String!,
         password : String!,
@@ -115,7 +126,7 @@ function createAdmin(args){
 }
 
 function createJobApplication(args){
-    return JobApplication.create({candidateId : args.candidateId, jobId : args.jobId, createdOn : new Date()})
+    return JobApplication.create({candidateId : args.candidateId, jobId : args.jobId, appliedOn : new Date()})
     .then(newDoc => JobApplication.findOne({applicationId : newDoc.applicationId}));
 }
 
@@ -147,6 +158,48 @@ function getAllFeedbacks(args){
     return JobFeedback.find({});
 }
 
+async function getAllApplications(args){
+    
+    var objs = [];
+
+    await JobApplication.find({"candidateId" : args.candidateId},(err, apps) => {
+        apps.forEach(function (app){
+            var job = JobOpening.findOne({"jobId" : app.jobId});
+            var candidate = Candidate.findOne({"candidateId" : args.candidateId});
+            var obj = {};
+            obj.applicationId = app.applicationId;
+            obj.jobId = app.jobId;
+            obj.jobName = job.jobName;
+            obj.candidateName = candidate.candidateName;
+            obj.interviewDate = job.interviewDate;
+            obj.appliedOn = app.appliedOn;
+            objs.push(obj);
+            console.log("app id");
+            console.log(obj.applicationId);
+        });
+    });
+    console.log("objs")
+    console.log(objs)
+    return objs;
+}
+
+async function getApplication(args){
+    var obj = {};
+    console.log(applicationId);
+    await JobApplication.findOne({"applicationId" : args.applicationId}, (err, app) => {
+        var job = JobOpening.findOne({"jobId" : app.jobId});
+            var candidate = Candidate.findOne({"candidateId" : app.candidateId});
+            obj.applicationId = app.applicationId;
+            obj.jobId = app.jobId;
+            obj.jobName = job.jobName;
+            obj.jobDescription = job.jobDescription;
+            obj.candidateName = candidate.candidateName;
+            obj.interviewDate = job.interviewDate;
+            console.log("app id");
+            console.log(obj.applicationId);
+    });
+    return obj;
+}
 // Root resolver
 var resolver = {
         Date : GraphQLDate,
@@ -163,7 +216,9 @@ var resolver = {
         candidates : getAllCandidates,
         createFeedback : createFeedback,
         feedback: getSingleFeedBack,
-        feedbacks: getAllFeedbacks
+        feedbacks: getAllFeedbacks,
+        jobApplications: getAllApplications,
+        application: getApplication
 };
 
 module.exports.resolver = resolver;

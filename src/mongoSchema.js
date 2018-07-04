@@ -69,7 +69,7 @@ var applicationSchema = new Schema({
     candidateId : Number,
     appliedOn : Date
 }, {collection:"applications"});
-adminSchema.plugin(autoIncrement.plugin, {model: 'application', field: 'applicationId'});
+applicationSchema.plugin(autoIncrement.plugin, {model: 'application', field: 'applicationId'});
 var JobApplication = mongoose.model('application', applicationSchema);
 module.exports.JobApplication = JobApplication;
 
