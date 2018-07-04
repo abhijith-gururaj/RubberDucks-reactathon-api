@@ -5,8 +5,16 @@ global.atob = require("atob");
 var JobOpening = mongoStuff.JobOpening;
 var Candidate = mongoStuff.Candidate;
 var Admin = mongoStuff.Admin;
-
-// GraphQL schema
+var JobApplication = mongoStuff.JobApplication;
+var JobFeedback = mongoStuff.JobFeedback;
+var Person = mongoStuff.Person;
+// // GraphQL schema
+// interface User{
+//     email : String!,
+//     password : String,
+//     role : String!,
+//     isValid : Boolean
+// }
 var schema = buildSchema(`
     scalar Date
     type Query {
@@ -14,13 +22,17 @@ var schema = buildSchema(`
         language: String,
         job(jobId : Int!) : Job,
         jobs : [Job],
-        isValidUser(email : String, password : String) : User
+        isValidUser(email : String, password : String) : Person,
+        candidate(email : String!) : Candidate,
+        candidates : [Candidate],
+        feedback(feedbackId : Int!) : JobFeedback
     },
     type Mutation {
         createJobOpening(jobPortfolio : String, jobDescription : String) : Job,
-        createCandidate(candidateName : String, candidateAge : Int, workExperience : Int, email : String) : Candidate,
+        createCandidate(candidateName : String, candidateAge : Int, workExperience : Int, email : String, password : String) : Candidate,
         createAdmin(adminName : String, email : String) : Admin,
-        createJobApplication(candidateId : Int!, jobId : Int!) : JobApplication
+        createJobApplication(candidateId : Int!, jobId : Int!) : JobApplication,
+        createFeedback(candidateId : Int, jobId : Int, feedback : String, rating : Int, positive : Boolean) : JobFeedback
     }
     type Job {
         jobId : Int!,
@@ -29,15 +41,18 @@ var schema = buildSchema(`
         jobName : String,
         closedOn : Date,
         isActive : Boolean!,
-        jobDescription : String!
+        jobDescription : String!,
+        interviewDate : Date,
+        lastDateToApply : Date
     }
-    interface User{
+    type Person{
         email : String!,
-        password : String!,
+        password : String,
         role : String!,
         isValid : Boolean
     }
-    type Candidate implements User{
+    
+    type Candidate{
         email : String!,
         password : String!,
         role : String!,
@@ -48,7 +63,7 @@ var schema = buildSchema(`
         registrationDate : Date,
         workExperience : Int
     }
-    type Admin implements User{
+    type Admin{
         email : String!,
         password : String!,
         role : String!,
@@ -92,12 +107,7 @@ function insertJobOpening(args){
 }
 
 function isValidUser(args){
-    var candidate = Candidate.findOne({email : args.email, password : args.password});
-    if(candidate){
-        return candidate;
-    } else {
-        return Admin.findOne({email : args.email, password : args.password});
-    }
+    return Person.findOne({email : args.email, password : args.password});
 }
 
 function createAdmin(args){
@@ -105,7 +115,36 @@ function createAdmin(args){
 }
 
 function createJobApplication(args){
+    return JobApplication.create({candidateId : args.candidateId, jobId : args.jobId, createdOn : new Date()})
+    .then(newDoc => JobApplication.findOne({applicationId : newDoc.applicationId}));
+}
 
+function createCandidate(args){
+    Person.create({candidateName : args.candidateName, candidateAge : args.candidateAge, workExperience : args.workExperience, isActive : true , 
+        email : args.email, password : args.password, registrationDate : new Date(), role : "candidate"})
+    return Candidate.create({candidateName : args.candidateName, candidateAge : args.candidateAge, workExperience : args.workExperience, isActive : true , 
+        email : args.email, password : args.password, registrationDate : new Date(), role : "candidate"})
+    .then(newDoc => Candidate.findOne({candidateId : newDoc.candidateId}));
+}
+
+function getSingleCandidate(args){
+    return Candidate.findOne({email : args.email})
+}
+
+function getAllCandidates(args){
+    return Candidate.find({});
+}
+
+function createFeedback(args){
+    return JobFeedback.create({candidateId : args.candidateId, jobId : args.jobId, feedback : args.feedback, rating : args.rating, positive : args.positive, createdOn : new Date()}).then(newDoc => JobFeedback.findOne({feedbackId : newDoc.feedbackId}));
+}
+
+function getSingleFeedBack(args){
+    return JobFeedback.findOne({feedbackId : args.feedbackId});
+}
+
+function getAllFeedbacks(args){
+    return JobFeedback.find({});
 }
 
 // Root resolver
@@ -118,7 +157,13 @@ var resolver = {
         createJobOpening : insertJobOpening,
         isValidUser : isValidUser,
         createAdmin : createAdmin,
-        createJobApplication : createJobApplication
+        createJobApplication : createJobApplication,
+        createCandidate : createCandidate,
+        candidate : getSingleCandidate,
+        candidates : getAllCandidates,
+        createFeedback : createFeedback,
+        feedback: getSingleFeedBack,
+        feedbacks: getAllFeedbacks
 };
 
 module.exports.resolver = resolver;

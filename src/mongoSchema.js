@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 var autoIncrement = require('mongoose-auto-increment');
 //Setup mongodb connection
-mongoose.connect('mongodb://localhost:80/local')
+mongoose.connect('mongodb://localhost:6000/local')
 var db = mongoose.connection;
 db.on('error', ()=> {console.log( '---FAILED to connect to mongoose')})
 db.once('open', () => {
@@ -18,7 +18,9 @@ var jobSchema = new Schema({
     jobName : String,
     closedOn : Date,
     isActive : Boolean,
-    jobDescription : String
+    jobDescription : String,
+    interviewDate : Date,
+    lastDateToApply : Date
 }, {collection : "verizonJobs"});
 jobSchema.plugin(autoIncrement.plugin, {model: 'jobOpening', field: 'jobId'});
 
@@ -43,7 +45,8 @@ var candidateSchema = new Schema({
     registrationDate : Date,
     workExperience : Number,
     email : String,
-    role : String
+    role : String,
+    password : String
 }, {collection:"candidates"});
 candidateSchema.plugin(autoIncrement.plugin, {model: 'candidate', field: 'candidateId'});
 var Candidate = mongoose.model('candidate', candidateSchema);
@@ -83,3 +86,21 @@ var jobFeedbackSchema = new Schema({
 adminSchema.plugin(autoIncrement.plugin, {model: 'feedback', field: 'feedbackId'});
 var JobFeedback = mongoose.model('feedback', jobFeedbackSchema);
 module.exports.JobFeedback = JobFeedback;
+
+
+var personSchema = new Schema({
+    personId : Number,
+    candidateName : String,
+    candidateAge : Number,
+    registrationDate : Date,
+    workExperience : Number,
+    email : String,
+    role : String,
+    adminId : Number,
+    adminName : String,
+    isValid : Boolean,
+    password : String
+}, {collection:"Person"});
+personSchema.plugin(autoIncrement.plugin, {model: 'person', field: 'personId'});
+var Person = mongoose.model('person', personSchema);
+module.exports.Person = Person;
